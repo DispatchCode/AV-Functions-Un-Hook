@@ -2,4 +2,4 @@
 
 #include <Windows.h>
 
-INT locate_function(LPCSTR func_name);
+INT GetFunctionFileOffset(LPCSTR module_name, LPCSTR func_name);

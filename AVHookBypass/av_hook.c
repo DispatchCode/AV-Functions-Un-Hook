@@ -4,6 +4,7 @@
 int main()
 {
 	LPCSTR pstrFuncName = "NtReadVirtualMemory";
-	printf("Function %s, raw offset: %X\n", pstrFuncName, locate_function(pstrFuncName));
+	LPCSTR pstrModuleName = "ntdll.dll";
+	printf("Function %s, raw offset: %X\n", pstrFuncName, GetFunctionFileOffset(pstrModuleName, pstrFuncName));
 	return 0;
 }
