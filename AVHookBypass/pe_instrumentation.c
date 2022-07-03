@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <windows.h>
+#include "pe_instrumentation.h"
 
 
 PIMAGE_NT_HEADERS GetNtHeader(LPCBYTE pImageBase, HMODULE hModule)
@@ -29,8 +30,10 @@ DWORD GetExportDataDirectoryVa(PIMAGE_NT_HEADERS pNtHeader)
 	return pExportDataDirectory->VirtualAddress;
 }
 
-DWORD GetFileOffsetFunction(LPCBYTE pImageBase, PIMAGE_NT_HEADERS pNtHeader, DWORD dwRvaFunction)
+PINFO GetFileOffsetFunction(LPCBYTE pImageBase, PIMAGE_NT_HEADERS pNtHeader, DWORD dwRvaFunction)
 {
+	PINFO pInfo = calloc(1, sizeof(INFO));
+	
 	PIMAGE_SECTION_HEADER pFirstSection = IMAGE_FIRST_SECTION(pNtHeader);
 	PBYTE pFunctions = (PBYTE)(pImageBase + dwRvaFunction);
 
@@ -41,15 +44,16 @@ DWORD GetFileOffsetFunction(LPCBYTE pImageBase, PIMAGE_NT_HEADERS pNtHeader, DWO
 
 		if (pSectionStart <= pFunctions && pFunctions < pSectionEnd)
 		{
-			return pFirstSection[j].PointerToRawData + (dwRvaFunction - pFirstSection[j].VirtualAddress);
-
+			pInfo->pInMemoryFunction = pFunctions;
+			pInfo->dwOffset = pFirstSection[j].PointerToRawData + (dwRvaFunction - pFirstSection[j].VirtualAddress);
+			return pInfo;
 		}
 	}
 
-	return 0;
+	return NULL;
 }
 
-DWORD GetFileOffset(LPCBYTE pImageBase, PIMAGE_NT_HEADERS pNtHeader, PIMAGE_EXPORT_DIRECTORY pExportDirectory, LPCSTR lpstrFuncName)
+PINFO GetFileOffset(LPCBYTE pImageBase, PIMAGE_NT_HEADERS pNtHeader, PIMAGE_EXPORT_DIRECTORY pExportDirectory, LPCSTR lpstrFuncName)
 {
 	PDWORD pAddressOfFunctions = (PDWORD)(pImageBase + pExportDirectory->AddressOfFunctions),
 		pAddressOfNames = (PDWORD)(pImageBase + pExportDirectory->AddressOfNames);
@@ -69,16 +73,16 @@ DWORD GetFileOffset(LPCBYTE pImageBase, PIMAGE_NT_HEADERS pNtHeader, PIMAGE_EXPO
 		}
 	}
 
-	return 0;
+	return NULL;
 }
 
-INT GetFunctionFileOffset(LPCSTR lpstrModuleName, LPCSTR lpstrFuncName) 
+PINFO GetFunctionFileOffset(LPCSTR lpstrModuleName, LPCSTR lpstrFuncName)
 {
 	HMODULE hModule = GetModuleHandle(lpstrModuleName);
 	
 	if(! hModule) 
 	{
-		return -1;
+		return NULL;
 	}
 
 	LPCBYTE pImageBase = (LPCBYTE)hModule;
@@ -87,17 +91,17 @@ INT GetFunctionFileOffset(LPCSTR lpstrModuleName, LPCSTR lpstrFuncName)
 	DWORD dwVirtualAddress = GetExportDataDirectoryVa(pNtHeader);
 	if(! dwVirtualAddress) 
 	{
-		return -2;
+		return NULL;
 	}
 
 	PIMAGE_EXPORT_DIRECTORY pExportDirectory = (PIMAGE_EXPORT_DIRECTORY) (pImageBase + dwVirtualAddress);
 
-	DWORD dwOffset = GetFileOffset(pImageBase, pNtHeader, pExportDirectory, lpstrFuncName);
+	PINFO pInfo = GetFileOffset(pImageBase, pNtHeader, pExportDirectory, lpstrFuncName);
 
-	if (!dwOffset) 
+	if (!pInfo)
 	{
-		return -3;
+		return NULL;
 	}
 
-	return dwOffset;
+	return pInfo;
 }

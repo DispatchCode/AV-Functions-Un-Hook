@@ -2,4 +2,9 @@
 
 #include <Windows.h>
 
-INT GetFunctionFileOffset(LPCSTR module_name, LPCSTR func_name);
+typedef struct INFO {
+	PBYTE pInMemoryFunction;
+	DWORD dwOffset;
+} INFO, *PINFO;
+
+PINFO GetFunctionFileOffset(LPCSTR module_name, LPCSTR func_name);
