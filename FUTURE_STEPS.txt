@@ -1,0 +1,2 @@
+Compare instructions using MCA: disassembly until 0xCC is reached (or the end of function).
+Compare machine code between physical file offset and in memory address.
