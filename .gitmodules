@@ -1,0 +1,3 @@
+[submodule "Machine-Code-Analyzer"]
+	path = Machine-Code-Analyzer
+	url = https://github.com/DispatchCode/Machine-Code-Analyzer.git

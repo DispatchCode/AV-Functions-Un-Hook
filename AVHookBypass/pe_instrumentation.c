@@ -46,6 +46,7 @@ PINFO GetFileOffsetFunction(LPCBYTE pImageBase, PIMAGE_NT_HEADERS pNtHeader, DWO
         {
             pInfo->pInMemoryFunction = pFunctions;
             pInfo->dwOffset = pFirstSection[j].PointerToRawData + (dwRvaFunction - pFirstSection[j].VirtualAddress);
+            pInfo->is32Bit = pNtHeader->FileHeader.Machine == IMAGE_FILE_MACHINE_I386;
             return pInfo;
         }
     }
