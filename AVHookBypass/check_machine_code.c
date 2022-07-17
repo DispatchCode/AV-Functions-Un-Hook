@@ -1,7 +1,5 @@
 #include "av_hook.h"
 
-extern pFunctionInfo getFunctionLength(char*, enum eFunctionType, bool, bool);
-
 
 size_t GetSize(FILE* hfile)
 {
@@ -11,39 +9,26 @@ size_t GetSize(FILE* hfile)
     return file_size;
 }
 
-function_code* MemoryDisassembly(char* in_buffer, size_t size) {
-    function_code* fc = calloc(1, sizeof(function_code));
-
-    fc->code_buffer = calloc(size, sizeof(uint8_t));
+struct instruction* MemoryDisassembly(char* in_buffer, DWORD dwNumberInstructions)
+{
+    struct instruction *instr = calloc(dwNumberInstructions, sizeof(struct instruction));
 
     int offset = 0;
-    int len = size;
-    while (len)
+    for(int i=0; i<dwNumberInstructions; i++)
     {
-        struct instruction instr;
-        mca_decode(&instr, 2, in_buffer, offset);
-
-        memcpy(fc->code_buffer + offset, instr.instr, instr.length);
-
-        len -= instr.length;
-        offset += instr.length;
+        mca_decode(instr + i, 2, in_buffer, offset);
+        offset += instr[i].length;
     }
 
-    fc->code_size = size;
-    
-    return fc;
+    return instr;
 }
 
-function_code* GetInMemoryBytes(PINFO pInfo)
+struct instruction* GetInMemoryBytes(PINFO pInfo, DWORD dwNumberInstructions)
 {
-    pFunctionInfo pFunctionInfo = getFunctionLength((char*)pInfo->pInMemoryFunction, 2, true, true);
-
-    printf("Function length: %d\n", pFunctionInfo->length);
-
-    return MemoryDisassembly((char*)pInfo->pInMemoryFunction, pFunctionInfo->length);
+    return MemoryDisassembly((char*)pInfo->pInMemoryFunction, dwNumberInstructions);
 }
 
-function_code* GetFileOnDiskBytes(PINFO pInfo)
+struct instruction* GetFileOnDiskBytes(PINFO pInfo, DWORD dwNumberInstructions)
 {
 
     LPCSTR path_ntdll32 = "C:\\Windows\\SysWOW64\\ntdll.dll";
@@ -59,29 +44,37 @@ function_code* GetFileOnDiskBytes(PINFO pInfo)
     fread(file_on_disk_bytes, sizeof(uint8_t), file_size, hFile);
     fclose(hFile);
     
-    pFunctionInfo pFunctionInfo = getFunctionLength((char*)(file_on_disk_bytes + pInfo->dwOffset), 2, true, true);
-
-    uint8_t *out_buffer = MemoryDisassembly((char*)(file_on_disk_bytes + pInfo->dwOffset), pFunctionInfo->length);
+    struct instruction* instr = MemoryDisassembly((char*)(file_on_disk_bytes + pInfo->dwOffset), dwNumberInstructions);
 
     free(file_on_disk_bytes);
 
-    return out_buffer;
+    return instr;
 }
 
-void CompareInMemoryAndPhysicalBytes(PINFO pInfo)
+void CompareInMemoryAndPhysicalBytes(PINFO pInfo, int dwNumberInstructions)
 {
-    function_code* in_memory_bytes = GetInMemoryBytes(pInfo);
-    function_code* on_disk_bytes = GetFileOnDiskBytes(pInfo);
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+    SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
-    printf("Bytes in memory: ");
-    for (int i = 0; i < in_memory_bytes->code_size; i++) {
-        printf("%X ", in_memory_bytes->code_buffer[i]);
-    }
-    printf("\n");
+    struct instruction* in_memory_bytes = GetInMemoryBytes(pInfo, dwNumberInstructions);
+    struct instruction* on_disk_bytes = GetFileOnDiskBytes(pInfo, dwNumberInstructions);
 
-    printf("Bytes on disk: ");
-    for (int i = 0; i < on_disk_bytes->code_size; i++) {
-        printf("%X ", on_disk_bytes->code_buffer[i]);
+    printf("Comparing %d instructions.\nOutput will show \"in memory\" bytes; a red output means that bytes are not equals and probably the function is hooked.\n", dwNumberInstructions);
+    for(int i=0; i<dwNumberInstructions; i++)
+    {
+        printf("\nInstruction #%d\n", i + 1);
+        for(int j=0; j<in_memory_bytes[i].length; j++)
+        {
+            if(in_memory_bytes[i].instr[j] != on_disk_bytes[i].instr[j])
+            {
+                printf("\x1b[31m%02X \x1b[0m", in_memory_bytes[i].instr[j]);
+            }
+            else
+            {
+                printf("\x1b[32m%02X \x1b[0m", in_memory_bytes[i].instr[j]);
+            }
+        }
     }
-    printf("\n");
 }

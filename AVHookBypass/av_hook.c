@@ -11,7 +11,7 @@ int main()
     {
         printf("Function %s, raw offset: %X, Pointer to function code %p:\n", pstrFuncName, pInfo->dwOffset, pInfo->pInMemoryFunction);
 
-        CompareInMemoryAndPhysicalBytes(pInfo);
+        CompareInMemoryAndPhysicalBytes(pInfo, 8);
 
         free(pInfo);
     }
