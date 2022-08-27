@@ -4,10 +4,9 @@ You can find more on this subject on the web, so nothing new.  The project is ju
 
 What makes AV Function Unhook different is the use of my own project, [MCA](https://github.com/DispatchCode/Machine-Code-Analyzer), an x86/x86-64 instruction disassembler.
 
-_I released the entire code only for study pourposes._
-
 You can see an execution example clicking here: [Unhook example](https://imgur.com/p0APck5.gif)
 
+_The entire source code was released for study purposes only_
 
 ## How it works?
 
