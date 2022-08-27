@@ -6,11 +6,8 @@ What makes AV Function Unhook different is the use of my own project, [MCA](http
 
 _I released the entire code only for study pourposes._
 
-You can see in the GIF below how it looks like when executed:
-<p align="center">
-  <img src="unhook_example.gif">
-  _AV HookBypass execution_
-</p>
+You can see an execution example clicking here: ![Unhook example](https://imgur.com/p0APck5)
+
 
 ## How it works?
 
